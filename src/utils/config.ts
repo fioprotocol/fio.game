@@ -23,7 +23,7 @@ const config = {
 
     RECENT_GAMES_LIMIT: process.env.RECENT_GAMES_LIMIT || '10',
     BASE_CHECK_INTERVAL: parseInt(process.env.BASE_CHECK_INTERVAL || '60000'), // 1 minute
-    GAME_CHECK_INTERVAL: parseInt(process.env.GAME_CHECK_INTERVAL || '9000'), // 15 minutes 900000
+    GAME_CHECK_INTERVAL: parseInt(process.env.GAME_CHECK_INTERVAL || '900000'), // 15 minutes
     CLIENT_POLL_INTERVAL: parseInt(process.env.CLIENT_POLL_INTERVAL || '3000'), // 3 seconds
     FIO_CHECK_INTERVAL: parseInt(process.env.FIO_CHECK_INTERVAL || '3000'), // 3 seconds
     MAX_PRIZE: parseInt(process.env.MAX_PRIZE || '1000'),
