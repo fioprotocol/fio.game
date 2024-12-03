@@ -1,0 +1,236 @@
+<div class="container mx-auto px-4 py-8">
+    <%
+    // Template functions to maintain consistent HTML fragments
+    function renderGameHeader(game) { %>
+        <h2 id="game-header" class="text-2xl text-center mb-8">
+            Game: <%= game.id %> <%= game.status === 'completed' ? `won by ${game.winnerFioHandle}` : 'in progress' %>,
+            prize: <%= game.prize.toFixed(2) %> FIO Tokens
+        </h2>
+    <% } %>
+
+    <% function renderLetterGrid(maskedPhrase) { %>
+        <div id="letter-grid" class="letter-grid">
+            <% maskedPhrase.split('').forEach((char, index) => { %>
+                <% if (char === ' ') { %>
+                    <div class="letter-space"></div>
+                <% } else { %>
+                    <div class="letter <%= char !== '_' ? 'revealed' : '' %>">
+                        <%= char !== '_' ? char : '' %>
+                    </div>
+                <% } %>
+            <% }); %>
+        </div>
+    <% } %>
+
+    <% function renderHowToPlay() { %>
+        <div id="how-to-play" class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl text-center">How to Play?</h2>
+            <div class="mt-4">
+                <p class="text-center text-gray-700">Be the first to guess the phrase and win the prize. To submit your guess, send <span class="font-bold">FIO Request</span> for any amount of FIO Token to <span class="font-bold">game@fio</span> and put a letter or phrase in the memo. Enjoy!</p>
+            </div>
+        </div>
+    <% } %>
+
+    <% function renderGuess(guess, game) {
+        const guessPrefix = guess.guess.length === 1 ? 'Letter' : 'Phrase';
+        let statusClass = '';
+        let statusText = '';
+        if (guess.status === 'winner') {
+            statusText = '(Winner!)';
+            statusClass = 'text-blue-600 font-bold';
+        } else if (guess.status === 'correct') {
+            statusText = '(hit)';
+            statusClass = 'text-green-600';
+        } else {
+            statusText = '(miss)';
+            statusClass = 'text-red-600';
+        }
+    %>
+    <div class="guess-entry text-sm">
+        <%= guessPrefix %> <span class="font-bold"><%= guess.guess %></span>
+        <span class="<%= statusClass %>"><%= statusText %></span>
+        by <span class="font-bold"><%= guess.fioHandle %></span>
+        <% if (guess.status === 'winner') { %>
+            won <%= game.prize.toFixed(2) %> FIO
+        <% } %>
+        on <%= new Date(guess.timestamp).toISOString().split('.')[0].replace('T', ' ') %> UTC
+    </div>
+    <% } %>
+
+    <% function renderCheckNewGameButton() { %>
+        <div id="new-game-button" class="text-center mt-8">
+            <a href="/" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                Check for new game
+            </a>
+        </div>
+    <% } %>
+
+    <h1 class="text-4xl text-center text-gray-800 mb-8">Guess with FIO Requests</h1>
+
+    <% if (typeof game === 'undefined' || game === null) { %>
+        <div class="text-center mb-8">
+            <div class="text-xl text-gray-700">No active game available.</div>
+            <a href="/games" class="inline-block mt-4 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                View Past Games
+            </a>
+        </div>
+    <% } else { %>
+        <div class="bg-[#efebff] rounded-lg shadow-md p-6 mb-8">
+            <% renderGameHeader(game) %>
+            <% renderLetterGrid(game.maskedPhrase) %>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl text-center">Guesses</h2>
+            <div id="guesses-container" class="mt-4">
+                <% if (!game.guesses || game.guesses.length === 0) { %>
+                    <p class="text-center text-gray-700">No guesses yet</p>
+                <% } else { %>
+                    <div class="text-center">
+                        <% game.guesses
+                                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                                .forEach(guess => renderGuess(guess, game)) %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <% if (game.status !== 'completed') { %>
+            <% renderHowToPlay() %>
+        <% } %>
+
+        <div id="new-game-button-container">
+            <% if (game.status === 'completed') { %>
+                <% renderCheckNewGameButton() %>
+            <% } %>
+        </div>
+
+        <% if (game && game.status !== 'completed') { %>
+            <script>
+                (function() {
+                    const currentGame = JSON.parse(`<%- JSON.stringify(game) %>`);
+                    let pollingInterval = null;
+
+                    function getLetterGridHtml(phrase) {
+                        return phrase.split('').map(char => {
+                            if (char === ' ') {
+                                return '<div class="letter-space"></div>';
+                            } else {
+                                return `<div class="letter ${char !== '_' ? 'revealed' : ''}">${char !== '_' ? char : ''}</div>`;
+                            }
+                        }).join('');
+                    }
+
+                    function getGuessHtml(guess, game) {
+                        const guessPrefix = guess.guess.length === 1 ? 'Letter' : 'Phrase';
+                        let statusClass = '';
+                        let statusText = '';
+                        if (guess.status === 'winner') {
+                            statusText = '(Winner!)';
+                            statusClass = 'text-blue-600 font-bold';
+                        } else if (guess.status === 'correct') {
+                            statusText = '(hit)';
+                            statusClass = 'text-green-600';
+                        } else {
+                            statusText = '(miss)';
+                            statusClass = 'text-red-600';
+                        }
+                        return `
+                            <div class="guess-entry text-sm">
+                                ${guessPrefix} <span class="font-bold">${guess.guess}</span>
+                                <span class="${statusClass}">${statusText}</span>
+                                by <span class="font-bold">${guess.fioHandle}</span>
+                                ${guess.status === 'winner' ? `won ${game.prize.toFixed(2)} FIO` : ''}
+                                on ${new Date(guess.timestamp).toISOString().split('.')[0].replace('T', ' ')} UTC
+                            </div>
+                        `;
+                    }
+
+                    function updateGameDisplay(game) {
+                        // Update letters grid
+                        const letterGrid = document.getElementById('letter-grid');
+                        if (letterGrid) {
+                            letterGrid.innerHTML = getLetterGridHtml(game.maskedPhrase);
+                        }
+
+                        // Update game header
+                        const gameHeader = document.getElementById('game-header');
+                        if (gameHeader) {
+                            gameHeader.textContent = `Game: ${game.id} ${game.status === 'completed' ? `won by ${game.winnerFioHandle}` : 'in progress'}, prize: ${game.prize.toFixed(2)} FIO Tokens`;
+                        }
+
+                        // Update guesses
+                        const guessesContainer = document.getElementById('guesses-container');
+                        if (guessesContainer) {
+                            if (!game.guesses || game.guesses.length === 0) {
+                                guessesContainer.innerHTML = '<p class="text-center text-gray-700">No guesses yet</p>';
+                            } else {
+                                guessesContainer.innerHTML = `
+                                    <div class="text-center">
+                                        ${game.guesses
+                                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                                    .map(guess => getGuessHtml(guess, game))
+                                    .join('')}
+                                    </div>
+                                `;
+                            }
+                        }
+
+                        // Handle completion state
+                        if (game.status === 'completed') {
+                            // Remove how to play section
+                            const howToPlay = document.getElementById('how-to-play');
+                            if (howToPlay) {
+                                howToPlay.remove();
+                            }
+
+                            // Add new game button if not present
+                            const buttonContainer = document.getElementById('new-game-button-container');
+                            if (buttonContainer && !document.getElementById('new-game-button')) {
+                                buttonContainer.innerHTML = `
+                                    <div id="new-game-button" class="text-center mt-8">
+                                        <a href="/" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                                            Check for new game
+                                        </a>
+                                    </div>
+                                `;
+                            }
+
+                            stopPolling();
+                        }
+                    }
+
+                    async function updateGameState() {
+                        try {
+                            const response = await fetch(`/api/game/${currentGame.id}`);
+                            const data = await response.json();
+
+                            if (data.game && JSON.stringify(data.game) !== JSON.stringify(currentGame)) {
+                                updateGameDisplay(data.game);
+                            }
+                        } catch (error) {
+                            console.error('Error updating game state:', error);
+                        }
+                    }
+
+                    function startPolling() {
+                        if (pollingInterval) {
+                            clearInterval(pollingInterval);
+                        }
+                        updateGameState();
+                        pollingInterval = setInterval(updateGameState, <%= typeof pollInterval !== 'undefined' ? pollInterval : 3000 %>);
+                    }
+
+                    function stopPolling() {
+                        if (pollingInterval) {
+                            clearInterval(pollingInterval);
+                            pollingInterval = null;
+                        }
+                    }
+
+                    startPolling();
+                })();
+            </script>
+        <% } %>
+    <% } %>
+</div>

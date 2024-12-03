@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Game {
+  id              Int      @id @default(autoincrement())
+  timestamp       DateTime @default(now())
+  phrase          String
+  prize           Int
+  status          String   @default("open")
+  winnerFioHandle String?
+  guesses         Guess[]
+
+  @@index([status, timestamp])
+  @@map("games")
+}
+
+model Guess {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime @default(now())
+  fioHandle String
+  guess     String
+  status    String   @default("miss")
+  game      Game     @relation(fields: [gameId], references: [id])
+  gameId    Int
+
+  @@index([gameId])
+  @@index([status])
+  @@map("guesses")
+}

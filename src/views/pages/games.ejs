@@ -1,0 +1,25 @@
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-4xl text-center text-gray-800 mb-8">FIO Request Words Game</h1>
+
+    <% if (showNoGamesMessage) { %>
+        <div class="text-center mb-8">
+            <p class="text-xl text-gray-700 mb-2">No games in progress at the moment</p>
+            <p class="text-gray-600">Come back again in the future</p>
+        </div>
+    <% } %>
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl mb-6 <%= showNoGamesMessage ? '' : 'text-center' %>">Past games</h2>
+        <div class="space-y-4">
+            <% games.forEach(game => { %>
+                <div class="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
+                    <a href="/game/<%= game.id %>" class="text-blue-600 hover:text-blue-800">
+                        Game <%= game.id %>
+                    </a>:
+                    <%= game.winnerFioHandle %> won <%= game.prize.toFixed(2) %> FIO
+                    guessing "<%= game.revealedPhrase %>"
+                </div>
+            <% }); %>
+        </div>
+    </div>
+</div>
