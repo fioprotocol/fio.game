@@ -10,14 +10,18 @@
 
     <% function renderLetterGrid(maskedPhrase) { %>
         <div id="letter-grid" class="letter-grid">
-            <% maskedPhrase.split('').forEach((char, index) => { %>
-                <% if (char === ' ') { %>
-                    <div class="letter-space"></div>
-                <% } else { %>
-                    <div class="letter <%= char !== '_' ? 'revealed' : '' %>">
-                        <%= char !== '_' ? char : '' %>
-                    </div>
-                <% } %>
+            <%
+                // Split phrase into words
+                const words = maskedPhrase.split(' ');
+            words.forEach((word, wordIndex) => {
+            %>
+                <div class="word-group">
+                    <% word.split('').forEach((char, charIndex) => { %>
+                        <div class="letter <%= char !== '_' ? 'revealed' : '' %>">
+                            <%= char !== '_' ? char : '' %>
+                        </div>
+                    <% }); %>
+                </div>
             <% }); %>
         </div>
     <% } %>

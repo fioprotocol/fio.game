@@ -4,9 +4,6 @@ const config = {
     DB_HOST: process.env.DB_HOST || 'localhost',
     DB_PORT: parseInt(process.env.DB_PORT || '5432'),
     DB_NAME: process.env.DB_NAME || 'wordgame',
-    get DATABASE_URL() {
-        return `postgresql://${this.DB_USER}:${this.DB_PASSWORD}@${this.DB_HOST}:${this.DB_PORT}/${this.DB_NAME}`;
-    },
     PORT: parseInt(process.env.PORT || '3000'),
 
     FIO_PRIVATE_KEY: process.env.FIO_PRIVATE_KEY || '',
@@ -19,7 +16,6 @@ const config = {
     FIO_REQ_LIMIT: parseInt(process.env.FIO_REQ_LIMIT || '100'),
     FIO_MAX_FEE: parseInt(process.env.FIO_MAX_FEE || '10000000000000'),
     FIO_TPID: process.env.FIO_TPID || '',
-
 
     RECENT_GAMES_LIMIT: process.env.RECENT_GAMES_LIMIT || '10',
     BASE_CHECK_INTERVAL: parseInt(process.env.BASE_CHECK_INTERVAL || '60000'), // 1 minute
