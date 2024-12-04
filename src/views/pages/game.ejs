@@ -1,6 +1,5 @@
 <div class="container mx-auto px-4 py-8">
     <%
-    // Template functions to maintain consistent HTML fragments
     function renderGameHeader(game) { %>
         <h2 id="game-header" class="text-2xl text-center mb-8">
             Game: <%= game.id %> <%= game.status === 'completed' ? `won by ${game.winnerFioHandle}` : 'in progress' %>,
@@ -9,9 +8,8 @@
     <% } %>
 
     <% function renderLetterGrid(maskedPhrase) { %>
-        <div id="letter-grid" class="letter-grid">
+        <div class="letter-grid">
             <%
-                // Split phrase into words
                 const words = maskedPhrase.split(' ');
             words.forEach((word, wordIndex) => {
             %>
@@ -30,7 +28,7 @@
         <div id="how-to-play" class="bg-white rounded-lg shadow-md p-6 mb-8">
             <h2 class="text-2xl text-center">How to Play?</h2>
             <div class="mt-4">
-                <p class="text-center text-gray-700">Be the first to guess the phrase and win the prize. To submit your guess, send <span class="font-bold">FIO Request</span> for any amount of FIO Token to <span class="font-bold">game@fio</span> and put a letter or phrase in the memo. Enjoy!</p>
+                <p class="text-center text-gray-700">Be the first to guess the phrase and win the prize. To submit your guess, send <span class="font-bold"><a href="https://fio.net/discover/fio-request" target="_blank">FIO Request</a></span> for any amount of FIO Token to <span class="font-bold">game@fio</span> and put a letter or phrase in the memo. Enjoy!</p>
             </div>
         </div>
     <% } %>
@@ -79,14 +77,14 @@
             </a>
         </div>
     <% } else { %>
-        <div class="bg-[#efebff] rounded-lg shadow-md p-6 mb-8">
+        <div class="game-section">
             <% renderGameHeader(game) %>
             <% renderLetterGrid(game.maskedPhrase) %>
         </div>
 
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div id="guesses-container" class="bg-white rounded-lg shadow-md p-6 mb-8">
             <h2 class="text-2xl text-center">Guesses</h2>
-            <div id="guesses-container" class="mt-4">
+            <div class="mt-4">
                 <% if (!game.guesses || game.guesses.length === 0) { %>
                     <p class="text-center text-gray-700">No guesses yet</p>
                 <% } else { %>
@@ -116,12 +114,13 @@
                     let pollingInterval = null;
 
                     function getLetterGridHtml(phrase) {
-                        return phrase.split('').map(char => {
-                            if (char === ' ') {
-                                return '<div class="letter-space"></div>';
-                            } else {
-                                return `<div class="letter ${char !== '_' ? 'revealed' : ''}">${char !== '_' ? char : ''}</div>`;
-                            }
+                        const words = phrase.split(' ');
+                        return words.map(word => {
+                            return `<div class="word-group">
+                                ${word.split('').map(char =>
+                                `<div class="letter ${char !== '_' ? 'revealed' : ''}">${char !== '_' ? char : ''}</div>`
+                            ).join('')}
+                            </div>`;
                         }).join('');
                     }
 
@@ -151,36 +150,50 @@
                     }
 
                     function updateGameDisplay(game) {
-                        // Update letters grid
-                        const letterGrid = document.getElementById('letter-grid');
+                        const letterGrid = document.querySelector('.letter-grid');
                         if (letterGrid) {
-                            letterGrid.innerHTML = getLetterGridHtml(game.maskedPhrase);
+                            const currentRevealedLetters = new Set();
+                            letterGrid.querySelectorAll('.letter.revealed').forEach(letter => {
+                                if (letter.textContent) {
+                                    currentRevealedLetters.add(letter.textContent.toUpperCase());
+                                }
+                            });
+
+                            const words = game.maskedPhrase.split(' ');
+                            const newHtml = words.map(word => {
+                                return `<div class="word-group">
+                                    ${word.split('').map(char => {
+                                        const isRevealed = char !== '_';
+                                        const isNewlyRevealed = isRevealed && !currentRevealedLetters.has(char.toUpperCase());
+                                        return `<div class="letter${isRevealed ? ' revealed' : ''}${isNewlyRevealed ? ' animate-reveal' : ''}">${isRevealed ? char : ''}</div>`;
+                                    }).join('')}
+                                </div>`;
+                            }).join('');
+                            letterGrid.innerHTML = newHtml;
                         }
 
-                        // Update game header
                         const gameHeader = document.getElementById('game-header');
                         if (gameHeader) {
                             gameHeader.textContent = `Game: ${game.id} ${game.status === 'completed' ? `won by ${game.winnerFioHandle}` : 'in progress'}, prize: ${game.prize.toFixed(2)} FIO Tokens`;
                         }
 
-                        // Update guesses
                         const guessesContainer = document.getElementById('guesses-container');
                         if (guessesContainer) {
+                            const guessesDiv = guessesContainer.querySelector('div');
                             if (!game.guesses || game.guesses.length === 0) {
-                                guessesContainer.innerHTML = '<p class="text-center text-gray-700">No guesses yet</p>';
+                                guessesDiv.innerHTML = '<p class="text-center text-gray-700">No guesses yet</p>';
                             } else {
-                                guessesContainer.innerHTML = `
-                                    <div class="text-center">
-                                        ${game.guesses
+                                guessesDiv.innerHTML = `
+                <div class="text-center">
+                    ${game.guesses
                                     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
                                     .map(guess => getGuessHtml(guess, game))
                                     .join('')}
-                                    </div>
-                                `;
+                </div>
+            `;
                             }
                         }
 
-                        // Handle completion state
                         if (game.status === 'completed') {
                             // Remove how to play section
                             const howToPlay = document.getElementById('how-to-play');
@@ -188,16 +201,15 @@
                                 howToPlay.remove();
                             }
 
-                            // Add new game button if not present
                             const buttonContainer = document.getElementById('new-game-button-container');
                             if (buttonContainer && !document.getElementById('new-game-button')) {
                                 buttonContainer.innerHTML = `
-                                    <div id="new-game-button" class="text-center mt-8">
-                                        <a href="/" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                                            Check for new game
-                                        </a>
-                                    </div>
-                                `;
+                <div id="new-game-button" class="text-center mt-8">
+                    <a href="/" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        Check for new game
+                    </a>
+                </div>
+            `;
                             }
 
                             stopPolling();
